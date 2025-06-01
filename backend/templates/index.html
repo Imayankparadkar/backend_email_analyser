@@ -609,7 +609,49 @@
     </div>
 
     <script>
-        const API_BASE = 'http://192.168.177.3:5000';
+        // Dynamically determine API base URL
+        function getApiBase() {
+            const currentHost = window.location.hostname;
+            const currentProtocol = window.location.protocol;
+            
+            // If we're on localhost, use local backend
+            if (currentHost === 'localhost' || currentHost === '127.0.0.1') {
+                return 'http://localhost:5000';
+            }
+            
+            // If we're on a deployed frontend, use your Render backend URL
+            if (currentHost.includes('onrender.com')) {
+                return 'https://backend-email-analyser.onrender.com';
+            }
+            
+            // Default fallback - same origin (for when backend serves frontend)
+            return '';
+        }
+
+        const API_BASE = getApiBase();
+        console.log('Using API Base:', API_BASE);
+        
+        // Check API connection on page load
+        window.addEventListener('load', checkApiConnection);
+        
+        async function checkApiConnection() {
+            try {
+                // Simple health check
+                const response = await fetch(`${API_BASE}/health`, {
+                    method: 'GET',
+                    timeout: 10000
+                });
+                
+                if (response.ok) {
+                    console.log('✓ Backend connection established');
+                } else {
+                    throw new Error(`Server responded with status: ${response.status}`);
+                }
+            } catch (error) {
+                console.error('API connection error:', error);
+                // You can add a visual indicator here if needed
+            }
+        }
         
         // Role selection handling
         document.querySelectorAll('.role-option').forEach(option => {
@@ -689,6 +731,8 @@
             previewSection.style.display = 'none';
             
             try {
+                console.log('Submitting to:', `${API_BASE}/upload`);
+                
                 const response = await fetch(`${API_BASE}/upload`, {
                     method: 'POST',
                     body: formData
@@ -697,9 +741,12 @@
                 const contentType = response.headers.get('content-type');
                 const responseText = await response.text();
                 
+                console.log('Response status:', response.status);
+                console.log('Response content type:', contentType);
+                
                 // Check if we got HTML instead of JSON (error page)
                 if (responseText.includes('<html')) {
-                    throw new Error('Server returned an error page. Please check if the Flask server is running properly.');
+                    throw new Error('Server returned an error page. Please check if the backend server is running properly.');
                 }
                 
                 // Try to parse JSON response
@@ -707,6 +754,8 @@
                 try {
                     data = JSON.parse(responseText);
                 } catch (parseError) {
+                    console.error('JSON parse error:', parseError);
+                    console.error('Raw response:', responseText);
                     throw new Error('Invalid response format from server');
                 }
                 
