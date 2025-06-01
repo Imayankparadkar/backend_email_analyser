@@ -1,0 +1,12 @@
+# === BACKEND ===
+backend/venv/
+backend/__pycache__/
+backend/.env
+
+# === SYSTEM ===
+.DS_Store
+Thumbs.db
+
+# === IDEs & Editors ===
+.vscode/
+.idea/
